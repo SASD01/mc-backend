@@ -84,3 +84,37 @@ def get_upcoming_appointment(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/debug")
+def debug_endpoints():
+    import traceback
+    try:
+        from app.core.config import settings
+        from app.core.database import get_supabase
+        
+        # Test settings
+        settings_dict = {
+            "PUBLIC_SUPABASE_URL": settings.PUBLIC_SUPABASE_URL,
+            "PUBLIC_SUPABASE_ANON_KEY": settings.PUBLIC_SUPABASE_ANON_KEY[:10] + "..." if settings.PUBLIC_SUPABASE_ANON_KEY else None,
+            "SUPABASE_SERVICE_ROLE_KEY": settings.SUPABASE_SERVICE_ROLE_KEY[:10] + "..." if settings.SUPABASE_SERVICE_ROLE_KEY else None
+        }
+        
+        # Test client initialization
+        client = get_supabase()
+        
+        # Test query
+        res = client.table('doctors').select('speciality').neq('speciality', None).execute()
+        
+        return {
+            "status": "success",
+            "settings": settings_dict,
+            "query_data": res.data
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error_type": str(type(e)),
+            "error_message": str(e),
+            "traceback": traceback.format_exc()
+        }
+
