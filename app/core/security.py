@@ -5,12 +5,11 @@ from app.core.config import settings
 
 security = HTTPBearer()
 
-# Singleton: se crea una sola vez por instancia serverless
+# Singleton: created once per serverless instance, reused across requests
 _auth_client: Client | None = None
 
 
-def _get_auth_client() -> Client:
-    """Return a cached Supabase client (anon key for auth verification)."""
+def get_supabase_client() -> Client:
     global _auth_client
     if _auth_client is None:
         _auth_client = create_client(
@@ -19,14 +18,12 @@ def _get_auth_client() -> Client:
         )
     return _auth_client
 
-
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> str:
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
     token = credentials.credentials
-    client = _get_auth_client()
-
+    client = get_supabase_client()
+    
     try:
+        # Verify token with Supabase Auth
         response = client.auth.get_user(token)
     except Exception as e:
         raise HTTPException(
@@ -34,12 +31,13 @@ def get_current_user(
             detail=f"Invalid authentication credentials: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
+    
     if not response or not response.user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
+        
+    # Return user id (which corresponds to patient_id in our schema)
     return response.user.id
