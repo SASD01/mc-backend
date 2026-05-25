@@ -6,7 +6,7 @@ class DoctorSchema(BaseModel):
     id: str
     first_name: str
     last_name: str
-    speciality: str
+    speciality: Optional[str] = None
     status: Optional[str] = None
     
 class SpecialtyResponse(BaseModel):
@@ -15,7 +15,7 @@ class SpecialtyResponse(BaseModel):
 class TimeSlot(BaseModel):
     time: time
     is_available: bool
-    schedule_id: str
+    schedule_id: Optional[str] = None
 
 class DaySlotsResponse(BaseModel):
     morning: List[TimeSlot]
@@ -23,14 +23,14 @@ class DaySlotsResponse(BaseModel):
 
 class BookAppointmentRequest(BaseModel):
     doctor_id: str
-    schedule_id: str
+    schedule_id: Optional[str] = None
     appointment_date: datetime
     
 class AppointmentResponse(BaseModel):
     id: str
     patient_id: str
     doctor_id: str
-    schedule_id: str
+    schedule_id: Optional[str] = None
     appointment_date: datetime
     status: str
 
