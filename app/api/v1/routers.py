@@ -75,18 +75,14 @@ def book_appointment(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.get("/appointments/upcoming", response_model=UpcomingAppointmentResponse)
+@api_router.get("/appointments/upcoming", response_model=List[UpcomingAppointmentResponse])
 def get_upcoming_appointment(
     patient_id: str = Depends(get_current_user),
     service: AppointmentService = Depends(get_appointment_service),
 ):
     try:
-        appointment = service.get_upcoming_appointment(patient_id=patient_id)
-        if not appointment:
-            raise HTTPException(
-                status_code=404, detail="No upcoming appointments found."
-            )
-        return appointment
+        appointments = service.get_upcoming_appointment(patient_id=patient_id)
+        return appointments
     except HTTPException:
         raise
     except Exception as e:

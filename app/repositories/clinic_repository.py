@@ -53,7 +53,31 @@ class ClinicRepository:
             return []
 
     def book_appointment(self, patient_id: str, doctor_id: str, schedule_id: str, appointment_date: str):
-        # Validar que el turno pertenezca al médico seleccionado
+        # 1. Validar que no tenga ya una cita para la misma especialidad
+        try:
+            doc_res = self.client.table('doctors').select('speciality').eq('id', doctor_id).execute()
+            if doc_res.data:
+                specialty = doc_res.data[0].get('speciality')
+                if specialty:
+                    from datetime import datetime
+                    now = datetime.utcnow().isoformat()
+                    active_res = self.client.table('appointments')\
+                        .select('*, doctor:doctors(speciality)')\
+                        .eq('patient_id', patient_id)\
+                        .neq('status', 'cancelled')\
+                        .gte('appointment_date', now)\
+                        .execute()
+                    if active_res.data:
+                        for appt in active_res.data:
+                            doc = appt.get('doctor')
+                            if doc and doc.get('speciality') == specialty:
+                                raise ValueError(f"Ya tienes una cita activa en {specialty}.")
+        except ValueError as ve:
+            raise ve
+        except Exception as e:
+            print(f"Error checking active specialty: {e}")
+
+        # 2. Validar que el turno pertenezca al médico seleccionado
         if schedule_id and schedule_id != "00000000-0000-0000-0000-000000000000":
             try:
                 sched_res = self.client.table('doctor_schedules').select('doctor_id').eq('id', schedule_id).execute()
@@ -98,10 +122,9 @@ class ClinicRepository:
                 .neq('status', 'cancelled')\
                 .gte('appointment_date', now)\
                 .order('appointment_date')\
-                .limit(1)\
                 .execute()
-            return response.data[0] if response.data else None
+            return response.data if response.data else []
         except Exception as e:
-            print(f"Error fetching upcoming appointment: {e}")
-            return None
+            print(f"Error fetching upcoming appointments: {e}")
+            return []
 
