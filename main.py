@@ -32,3 +32,13 @@ app.include_router(api_router, prefix="/api/v1")
 @app.get("/", include_in_schema=False)
 def health_check():
     return {"status": "ok"}
+
+from fastapi.exceptions import ResponseValidationError
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(ResponseValidationError)
+async def validation_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": exc.errors(), "body": exc.body},
+    )
