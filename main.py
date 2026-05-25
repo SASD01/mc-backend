@@ -42,3 +42,11 @@ async def validation_exception_handler(request, exc):
         status_code=500,
         content={"detail": exc.errors(), "body": exc.body},
     )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    import traceback
+    return JSONResponse(
+        status_code=500,
+        content={"error": str(exc), "trace": traceback.format_exc()},
+    )
