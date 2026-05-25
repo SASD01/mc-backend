@@ -33,6 +33,31 @@ app.include_router(api_router, prefix="/api/v1")
 def health_check():
     return {"status": "ok"}
 
+
+@app.get("/debug/env", include_in_schema=False)
+def debug_env():
+    """Temporary endpoint to diagnose Vercel env vars. REMOVE after fixing."""
+    def mask(val):
+        if not val:
+            return "NOT_SET"
+        if len(val) < 10:
+            return f"{val[:2]}...({len(val)} chars)"
+        return f"{val[:6]}...{val[-4:]} ({len(val)} chars)"
+
+    raw_url = os.getenv("PUBLIC_SUPABASE_URL")
+    raw_anon = os.getenv("PUBLIC_SUPABASE_ANON_KEY")
+    raw_service = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+
+    return {
+        "PUBLIC_SUPABASE_URL": raw_url or "NOT_SET",
+        "PUBLIC_SUPABASE_ANON_KEY": mask(raw_anon),
+        "SUPABASE_SERVICE_ROLE_KEY": mask(raw_service),
+        "all_env_keys_containing_supa": [
+            k for k in os.environ.keys()
+            if "supa" in k.lower() or "supabase" in k.lower()
+        ],
+    }
+
 from fastapi.exceptions import ResponseValidationError
 from fastapi.responses import JSONResponse
 
